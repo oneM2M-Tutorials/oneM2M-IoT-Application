@@ -3,6 +3,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var request = require('request');
+var config = require('config');
 var app = express();
 const argv = require('yargs')
 	.command({
@@ -41,13 +42,13 @@ const argv = require('yargs')
 	
 ///////////////Parameters/////////////////
 //CSE Params
-var csePoA = "http://IPaddress:port";
-var cseName = "CsaName";
-var cseRelease = "1";
+var csePoA = "http://" + config.cse.ip + ":" + config.cse.port;
+var cseName = config.cse.name;
+var cseRelease = config.cse.release;
 //AE params
-var monitorId = "Cae-monitor";
-var monitorIP = "127.0.0.1";
-var monitorPort = 3000;
+var monitorId = config.monitor.id;
+var monitorIP = config.monitor.ip;
+var monitorPort = config.monitor.port;
 var body;
 var sensorOffState = 1;
 var requestNr = 0;

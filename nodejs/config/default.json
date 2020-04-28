@@ -1,0 +1,13 @@
+{
+	"cse":{
+		"ip":"127.0.0.1",
+		"port": 8080,
+		"name":"server",
+		"release":"1"
+	},
+	"monitor":{
+		"id":"Cae-monitor",
+		"ip":"127.0.0.1",
+		"port":3000
+	}
+}
