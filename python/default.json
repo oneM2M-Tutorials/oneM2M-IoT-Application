@@ -1,0 +1,24 @@
+{
+	"cse":{
+		"ip":"127.0.0.1",
+		"port": 8080,
+		"name":"CseName",
+		"release":"1"
+	},
+	"monitor":{
+		"id":"Cae-monitor",
+		"ip":"127.0.0.1",
+		"port":3000
+	},
+	"LuminositySensor":{
+		"luminosityThreshold":400
+	},
+	"TiltSensor":{
+		"sensorOffState":1
+	},
+	"LedActuator":{
+		"isLedOn":false
+	}
+
+
+}
