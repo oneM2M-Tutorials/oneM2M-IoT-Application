@@ -4,6 +4,7 @@ import requests
 import json
 from flask import Flask
 from flask import request
+from flask import Response
 import sys
 import random
 import configparser
@@ -69,18 +70,20 @@ def createAE():
                     'X-M2M-Origin': monitorId,
                     "X-M2M-RI": "req" + str(requestNr),
                 }
+    ae_json={
+			"m2m:ae":{
+					"rn": "Monitor", 
+					"api":"org.demo.monitor-app",
+					"rr":True,
+					"poa":[ monitorPoA ]
+				}
+			}
     if(cseRelease != "1"):
         headers.update({"X-M2M-RVI":cseRelease})
+        ae_json['m2m:ae'].update({"srv":[cseRelease]})
 
     response = requests.post(csePoA + "/" + cseName,
-                json={
-                    "m2m:ae": {
-                        "rn": "Monitor", 
-                        "api":"org.demo.monitor-app",
-                        "rr":"true",
-                        "poa":[ monitorPoA ]
-                    }
-                }, 
+                json=ae_json,
                 headers= headers
                 )
     requestNr += 1
@@ -131,7 +134,11 @@ def processNotification():
         commandLedTilt(sensorValue)
     else:
         print("Demo not implemented")
-    return ('', 200)
+    response = Response('')
+    response.headers["X-M2M-RSC"] = 2000
+    if (cseRelease != "1"):
+        response.headers["X-M2M-RVI"] = cseRelease
+    return response
 
 def commandLedLuminosity(sensorValue):
     global isLedOn
