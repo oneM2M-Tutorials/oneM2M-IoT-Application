@@ -108,7 +108,13 @@ if (argv._.includes('commandActuator')) {
 				console.log("Demo not implemented");
 			} 
 		}
-		res.sendStatus(200);	
+		res.set('X-M2M-RSC', 2000)
+		if(cseRelease != "1") {
+			res.set('X-M2M-RVI', cseRelease)
+		}
+	
+		res.status(200);
+		res.send();
 	});
 
 createAE();
@@ -168,7 +174,7 @@ function createAE(){
 
 	if(cseRelease != "1") {
 		options.headers = Object.assign(options.headers, {"X-M2M-RVI":cseRelease});
-		options.json["m2m:ae"] = Object.assign(options.json["m2m:ae"], {"srv":["2a"]});
+		options.json["m2m:ae"] = Object.assign(options.json["m2m:ae"], {"srv":[cseRelease]});
 	}
 	
 	requestNr += 1;
