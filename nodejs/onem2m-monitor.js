@@ -45,6 +45,7 @@ const argv = require('yargs')
 var csePoA = "http://" + config.cse.ip + ":" + config.cse.port;
 var cseName = config.cse.name;
 var cseRelease = config.cse.release;
+var poa_in_nu = config.cse.poa_in_nu;
 //AE params
 var monitorId = config.monitor.id;
 var monitorIP = config.monitor.ip;
@@ -202,13 +203,17 @@ function createSubscription(){
 			"m2m:sub": {
 				"rn": "SUB_MONITOR",
 				"nu": [monitorId],
-				"nct": 2,//In theory, this value in combination with net=3 is N/A, nct=1(default) is ok
+				"nct": 1,//In theory, this value in combination with net=3 is N/A, nct=1(default) is ok
 				"enc": {
 					"net": [3]
 				}
 			}
 		}
 	};
+
+	if(config.cse.poa_in_nu) {
+		options.json["m2m:sub"].nu = ["http://" + config.app.ip + ":" + config.app.port + "/" + name]; 
+	}
 
 	console.log("");
 	console.log(options.method + " " + options.uri);

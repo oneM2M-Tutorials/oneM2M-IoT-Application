@@ -17,6 +17,7 @@ with open('default.json', 'r') as f:
 csePoA = "http://" + config["cse"]["ip"] + ":" + str(config["cse"]["port"])
 cseName = config["cse"]["name"]
 cseRelease = config["cse"]["release"]
+poa_in_nu = config["cse"]["poa_in_nu"]
 # AE params
 monitorId = config["monitor"]["id"]
 monitorIP = config["monitor"]["ip"]
@@ -34,6 +35,7 @@ actuatorToTrigger = ""
 def createSUB():
     global requestNr
     global cseRelease
+    global poa_in_nu
     headers = {
                     'Content-Type': 'application/json;ty=23',
                     'X-M2M-Origin': monitorId,
@@ -43,12 +45,16 @@ def createSUB():
     if(cseRelease != "1"):
         headers.update({"X-M2M-RVI":cseRelease})
 
+    notificationUri = [cseName + "/Monitor"]
+    if(poa_in_nu):
+    	notificationUri = [monitorPoA]
+
     response = requests.post(csePoA + '/' + cseName + "/" + sensorToMonitor + '/DATA',
                 json={
                     "m2m:sub": {
                         "rn": "SUB_Monitor",
-                        "nu": [cseName + "/Monitor"],
-                        "nct": 2,
+                        "nu": notificationUri,
+                        "nct": 1,
                         "enc": {
                             "net": [3]
                         }
@@ -73,7 +79,7 @@ def createAE():
     ae_json={
 			"m2m:ae":{
 					"rn": "Monitor", 
-					"api":"org.demo.monitor-app",
+					"api":"Norg.demo.monitor-app",
 					"rr":True,
 					"poa":[ monitorPoA ]
 				}

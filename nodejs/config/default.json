@@ -3,7 +3,8 @@
 		"ip":"127.0.0.1",
 		"port": 8080,
 		"name":"server",
-		"release":"1"
+		"release":"1",
+		"poa_in_nu":true
 	},
 	"monitor":{
 		"id":"Cae-monitor",
