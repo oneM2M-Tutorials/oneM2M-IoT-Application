@@ -1,4 +1,4 @@
-	// Version 1.0
+// Version 1.1
 
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -25,7 +25,7 @@ const argv = require('yargs')
 		alias: 's',
 		description: 'Sensor to be monitored',
 		type: 'String',
-		choices: ['Luminosity', 'Tilt'],
+		choices: ['Luminosity', 'Tilt', 'Potentiometer', 'RemoteControl'],
 		default: 'Luminosity'
 	})
 	.usage('Usage: $0 -s [sensor] -a [actuator]')
@@ -33,7 +33,7 @@ const argv = require('yargs')
 		alias: 'a',
 		description: 'Actuator to be triggered',
 		type: 'String',
-		choices: ['Led'],
+		choices: ['Led', 'Display', 'Servo'],
 		default: 'Led'
 	})
 	.help()
@@ -51,7 +51,6 @@ var monitorId = config.monitor.id;
 var monitorIP = config.monitor.ip;
 var monitorPort = config.monitor.port;
 var body;
-var sensorOffState = 1;
 var requestNr = 0;
 
 console.log(argv);
@@ -63,19 +62,16 @@ console.log("");
 console.log("Sensor to be monitored: "+sensorToMonitor+", Actuator to trigger: "+actuatorToTrigger);
 console.log("");
 
-var sensorOffState = 1;
-var isLedOn = false;
-var luminosityThreshold = 0;
-
-if(sensorToMonitor == "LuminositySensor"){
-	luminosityThreshold = 400;
-} else if (sensorToMonitor == "TiltSensor"){
-	sensorOffState = 1;
+var isActuatorOn = false;
+var sensorThreshold;  
+switch (sensorToMonitor)  {
+	case "LuminositySensor" :   	sensorThreshold = 400;	break;
+	case "TiltSensor" :         	sensorThreshold = 0;	break;
+	case "PotentiometerSensor" :	sensorThreshold = 512;	break;
 }
-
-if(actuatorToTrigger == "LedActuator"){
-	isLedOn = false;
-} 
+switch (actuatorToTrigger)  {
+	case "LedActuator" : isActuatorON = false; break;
+}
 
 //////////////////////////////////////////
 
@@ -101,13 +97,19 @@ if (argv._.includes('commandActuator')) {
 		if  (!vrq) {
 			var sensorValue = req.body["m2m:sgn"].nev.rep["m2m:cin"].con;
 			console.log("Receieved sensor value : " + sensorValue);
+			
 			if((sensorToMonitor == "LuminositySensor")&&(actuatorToTrigger == "LedActuator")){
 				commandLedLuminosity(sensorValue);
 			} else if((sensorToMonitor == "TiltSensor")&&(actuatorToTrigger == "LedActuator")){
 				commandLedTilt(sensorValue);
+			} else if((sensorToMonitor == "TiltSensor")&&(actuatorToTrigger == "DisplayActuator")){
+				commandDisplayTilt(sensorValue);
+			} else if((sensorToMonitor == "PotentiometerSensor")&&(actuatorToTrigger == "DisplayActuator")){
+				commandDisplayPotentiometer(sensorValue);
 			} else {
 				console.log("Demo not implemented");
 			} 
+			
 		}
 		res.set('X-M2M-RSC', 2000)
 		if(cseRelease != "1") {
@@ -118,31 +120,58 @@ if (argv._.includes('commandActuator')) {
 		res.send();
 	});
 
-createAE();
+	createAE();
 }
+
 function commandLedTilt(sensorValue) {
-	if(sensorValue == sensorOffState && isLedOn ){
+	if(sensorValue == sensorThreshold && isActuatorOn ){
 		console.log("Tilt deactivated => Switch Off the led");
 		createContentInstance("[switchOff]");
-		isLedOn=false;
-	} else if(sensorValue != sensorOffState && !isLedOn){
+		isActuatorOn=false;
+	} else if(sensorValue != sensorThreshold && !isActuatorOn){
 		console.log("Tilt activated => Switch On the led");
 		createContentInstance("[switchOn]")
-		isLedOn=true;
+		isActuatorOn=true;
+	}else{
+		console.log("Nothing to do");
+	}
+}
+
+function commandDisplayTilt(sensorValue) {
+	if(sensorValue == sensorThreshold && isActuatorOn ){
+		console.log("Tilt deactivated => Show OFF on the dispaly");
+		createContentInstance("[switchOff]");
+		isActuatorOn=false;
+	} else if(sensorValue != sensorThreshold && !isActuatorOn){
+		console.log("Tilt activated => Show ON on the display");
+		createContentInstance("[switchOn]")
+		isActuatorOn=true;
 	}else{
 		console.log("Nothing to do");
 	}
 }
 
 function commandLedLuminosity(sensorValue) {
-	if(sensorValue>500 && isLedOn ){
+	if(sensorValue>sensorThreshold && isActuatorOn ){
 		console.log("High luminosity => Switch led OFF");
 		createContentInstance("[switchOff]");
-		isLedOn=false;
-	}else if(sensorValue<=500 && !isLedOn){
+		isActuatorOn=false;
+	}else if(sensorValue<=sensorThreshold && !isActuatorOn){
 		console.log("Low luminosity => Switch led ON");
 		createContentInstance("[switchOn]")
-		isLedOn=true;
+		isActuatorOn=true;
+	}else{
+		console.log("Nothing to do");
+	}
+}
+
+function commandDisplayPotentiometer(sensorValue) {
+	if(sensorValue < sensorThreshold ){
+		console.log("Potentiometer value is low  => Show <Value is LOW !> on the LCD Display");
+		createContentInstance("[Value is LOW !]");
+	} else if(sensorValue >= sensorThreshold){
+		console.log("Potentiometer value is high  => Show <Value is HIGH !> on the LCD Display");
+		createContentInstance("[Value is HIGH !]");
 	}else{
 		console.log("Nothing to do");
 	}
@@ -162,7 +191,7 @@ function createAE(){
 		json: { 
 			"m2m:ae":{
 				"rn":"MONITOR",			
-				"api":"app.company.com",
+				"api":"N.app.company.com",
 				"rr":true,
 				"poa":["http://"+monitorIP+":"+monitorPort+"/"]
 			}
@@ -189,7 +218,6 @@ function createAE(){
 	});
 }
 
-
 function createSubscription(){
 	var options = {
 		uri: csePoA + "/" + cseName + "/" + sensorToMonitor + "/DATA",
@@ -210,7 +238,7 @@ function createSubscription(){
 			}
 		}
 	};
-
+	
 	if(config.cse.poa_in_nu) {
 		options.json["m2m:sub"].nu = ["http://" + config.app.ip + ":" + config.app.port + "/" + name]; 
 	}
