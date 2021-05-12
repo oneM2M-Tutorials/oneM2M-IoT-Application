@@ -27,6 +27,7 @@ monitorPoA = "http://" + monitorIP + ":" + str(monitorPort)
 sensorOffState = config["TiltSensor"]["sensorOffState"]
 luminosityThreshold = config["LuminositySensor"]["luminosityThreshold"]
 isLedOn = config["LedActuator"]["isLedOn"]
+potentiometerThreshold = config["PoteniometerSensor"]["potentiometerThreshold"]
 requestNr = 0
 
 sensorToMonitor = ""
@@ -99,7 +100,7 @@ def createAE():
         print("AE Creation :", response.status_code)
     createSUB()
 
-def createCIN(commandName):
+def createCIN(actuatorName, commandName):
     global requestNr
     global cseRelease
     headers = {
@@ -111,7 +112,7 @@ def createCIN(commandName):
     if (cseRelease != "1"):
         headers.update({"X-M2M-RVI": cseRelease})
 
-    response = requests.post(csePoA + "/" + cseName + "/" + actuatorToTrigger + '/COMMAND',
+    response = requests.post(csePoA + "/" + cseName + "/" + actuatorName + '/COMMAND',
                 json={
                     "m2m:cin": {
                         "con": commandName
@@ -134,12 +135,18 @@ def processNotification():
     notificationJSON = request.json
     sensorValue = int(notificationJSON['m2m:sgn']['nev']['rep']['m2m:cin']['con'])
     print("Receieved sensor value : ", sensorValue)
+	
+	# demo selection : begin
     if (sensorToMonitor == "LuminositySensor") and (actuatorToTrigger == "LedActuator"):
         commandLedLuminosity(sensorValue)
     elif (sensorToMonitor == "TiltSensor") and (actuatorToTrigger == "LedActuator"):
         commandLedTilt(sensorValue)
+    elif (sensorToMonitor == "PotentiometerSensor") and (actuatorToTrigger == "DisplayActuator"):
+        commandDisplayPotentiometer(sensorValue)
     else:
         print("Demo not implemented")
+	# demo selection : end
+		
     response = Response('')
     response.headers["X-M2M-RSC"] = 2000
     if (cseRelease != "1"):
@@ -149,12 +156,12 @@ def processNotification():
 def commandLedLuminosity(sensorValue):
     global isLedOn
     if (sensorValue > luminosityThreshold) and (isLedOn == True):
-        print("High luminosity => Switch led OFF")
-        createCIN("[switchOff]")
+        print("High luminosity => Switch OFF the led")
+        createCIN(actuatorToTrigger, "[switchOff]")
         isLedOn = False
     elif (sensorValue < luminosityThreshold) and (isLedOn == False):
-        print("Low luminosity => Switch led ON")
-        createCIN("[switchOn]")
+        print("Low luminosity => Switch ON the led")
+        createCIN(actuatorToTrigger, "[switchOn]")
         isLedOn = True
     else:
         print("Nothing to do")
@@ -163,21 +170,29 @@ def commandLedTilt(sensorValue):
     global isLedOn
     if (sensorValue == sensorOffState) and (isLedOn == True) :
         print ( "Tilt deactivated => Switch Off the led")
-        createCIN("[switchOff]")
+        createCIN(actuatorToTrigger, "[switchOff]")
         isLedOn = False
     elif (sensorValue != sensorOffState) and (isLedOn == False) :
         print("Tilt activated => Switch On the led")
-        createCIN("[switchOn]")
+        createCIN(actuatorToTrigger, "[switchOn]")
         isLedOn = True
     else:
         print("Nothing to do")
+		
+def commandDisplayPotentiometer(sensorValue):
+    if (sensorValue < potentiometerThreshold) :
+        print ( "Potentionmeter value is low  => Show [Value is LOW !] on the LCD Screen ")
+        createCIN(actuatorToTrigger, "[Value is LOW !]")
+    else: 
+        print ( "Potentionmeter value is high  => Show [Value is HIGH !] on the LCD Screen ")
+        createCIN(actuatorToTrigger, "[Value is HIGH !]")
 
 def commandActuator(args):
     global actuatorToTrigger
     requestNr = random.randint(0,1000)
     print("The command " + args.command + " will be sent to the actuator " + args.actuator)
     actuatorToTrigger = args.actuator +"Actuator"
-    createCIN("[" + args.command + "]")
+    createCIN(actuatorToTrigger, "[" + args.command + "]")
     sys.exit()
 
 def getAll(args):
@@ -242,8 +257,8 @@ def getParameters():
 
    #Command-line parsing
    parser = argparse.ArgumentParser()
-   parser.add_argument("-s","--sensor", choices=["Luminosity", "Tilt"], default="Luminosity", help='Sensor to be monitored')
-   parser.add_argument("-a","--actuator", choices=["Led"],default="Led", help='Actuator to trigger')
+   parser.add_argument("-s","--sensor", choices=["Luminosity", "Tilt", "Potentiometer", "RemoteControl"], default="Luminosity", help='Sensor to be monitored')
+   parser.add_argument("-a","--actuator", choices=["Led", "Display", "Servo"],default="Led", help='Actuator to trigger')
 
    #Subcommands command-line parsing
    subparsers = parser.add_subparsers(required=False, help="Subcommands")
@@ -254,11 +269,11 @@ def getParameters():
    parser_commandActuator.set_defaults(func=commandActuator)
    #"getAll"
    parser_getAll = subparsers.add_parser("getAll", help="Get all data from the given sensor")
-   parser_getAll.add_argument('-s',"--sensor", choices=["Luminosity", "Tilt"], default="Luminosity", help='Given sensor')
+   parser_getAll.add_argument('-s',"--sensor", choices=["Luminosity", "Tilt", "Potentiometer", "RemoteControl"], default="Luminosity", help='Given sensor')
    parser_getAll.set_defaults(func=getAll)
    #"getLatest"
    parser_getLatest = subparsers.add_parser("getLatest", help="Get latest data from the given sensor")
-   parser_getLatest.add_argument('-s', "--sensor", choices=["Luminosity", "Tilt"], default="Luminosity", help='Given sensor')
+   parser_getLatest.add_argument('-s', "--sensor", choices=["Luminosity", "Tilt", "Potentiometer", "RemoteControl"], default="Luminosity", help='Given sensor')
    parser_getLatest.set_defaults(func=getLatest)
 
    args = parser.parse_args()
@@ -278,6 +293,8 @@ if __name__ == '__main__':
         luminosityThreshold = 400
     elif sensorToMonitor == "TiltSensor":
         sensorOffState = 1
+    elif sensorToMonitor == "PotentiometerSensor":
+        potentiometerThreshold = 512
 
     if (actuatorToTrigger == "LedActuator"):
         isLedOn = False
