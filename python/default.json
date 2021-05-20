@@ -19,7 +19,7 @@
 	},
 	"LedActuator":{
 		"isLedOn":false
-	}
+	},
 	"PoteniometerSensor":{
 		"potentiometerThreshold":512
 	}
