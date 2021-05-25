@@ -93,7 +93,7 @@ if (argv._.includes('commandActuator')) {
 
 	// handle received http messages
 	app.post('/', function (req, res) {
-		var  vrq  = req.body["m2m:sgn"]["m2m:vrq"];
+		var  vrq  = req.body["m2m:sgn"]["vrq"];
 		if  (!vrq) {
 			var sensorValue = req.body["m2m:sgn"].nev.rep["m2m:cin"].con;
 			console.log("Receieved sensor value : " + sensorValue);
@@ -240,7 +240,7 @@ function createSubscription(){
 	};
 	
 	if(config.cse.poa_in_nu) {
-		options.json["m2m:sub"].nu = ["http://" + config.app.ip + ":" + config.app.port + "/" + name]; 
+		options.json["m2m:sub"].nu = ["http://" + monitorIP + ":" + monitorPort + "/"]; 
 	}
 
 	console.log("");
