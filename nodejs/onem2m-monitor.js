@@ -1,8 +1,8 @@
-// Version 1.1
-
+// Version 1.2
 var express = require('express');
 var bodyParser = require('body-parser');
 var request = require('request');
+var syncrequest = require('sync-request');
 var config = require('config');
 var app = express();
 const argv = require('yargs')
@@ -88,7 +88,7 @@ if (argv._.includes('commandActuator')) {
 
 	// start http server
 	app.listen(monitorPort, function () {
-	console.log("Listening on: " + monitorIP + ":" + monitorPort);
+		console.log("Listening on: " + monitorIP + ":" + monitorPort);
 	});
 
 	// handle received http messages
@@ -106,10 +106,11 @@ if (argv._.includes('commandActuator')) {
 				commandDisplayTilt(sensorValue);
 			} else if((sensorToMonitor == "PotentiometerSensor")&&(actuatorToTrigger == "DisplayActuator")){
 				commandDisplayPotentiometer(sensorValue);
+			} else if((sensorToMonitor == "RemoteControlSensor")&&(actuatorToTrigger == "ServoActuator")){
+				commandServoRemoteControl(sensorValue);
 			} else {
 				console.log("Demo not implemented");
 			} 
-			
 		}
 		res.set('X-M2M-RSC', 2000)
 		if(cseRelease != "1") {
@@ -174,6 +175,34 @@ function commandDisplayPotentiometer(sensorValue) {
 		createContentInstance("[Value is HIGH !]");
 	}else{
 		console.log("Nothing to do");
+	}
+}
+
+function commandServoRemoteControl(sensorValue) {
+	var cityName = "";
+	var APIToken = config.misc.weatherAPIToken; 
+	switch (sensorValue) {
+		case "0": cityName = "toulon"; break;
+		case "1": cityName = "strasbourg"; break;
+		case "2": cityName = "moscou"; break;
+		case "3": cityName = "quaqtaq"; break;
+	}
+	if (cityName != "") {
+		console.log("City " + cityName + " is supported => Retreiveing Weather info from the web !");
+		var res = syncrequest('GET', 'http://api.openweathermap.org/data/2.5/weather?q='+ cityName +'&appid='+ APIToken +'&units=metric');
+		var obj = JSON.parse(res.getBody().toString());
+		var weather = obj.weather[0].main;
+		console.log("Weather in " + cityName + " : " + weather);
+		switch (weather) {
+			case "Snow"	 : createContentInstance("[POS = 0 deg]"); break;
+			case "Storm" : createContentInstance("[POS = 45 deg]"); break;
+			case "Rain"  : createContentInstance("[POS = 90 deg]"); break;
+			case "Clouds": createContentInstance("[POS = 135 deg]"); break;
+			case "Clear" : createContentInstance("[POS = 180 deg]"); break;
+		}
+	}
+	else {
+		console.log("City " + cityName + "is not supported => Nothing to do !");
 	}
 }
 

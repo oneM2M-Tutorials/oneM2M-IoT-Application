@@ -11,6 +11,9 @@
 		"ip":"127.0.0.1",
 		"port":3000
 	},
+	"misc" : {
+		"weatherAPIToken": "FILL_IN_YOUR_OPENWEATHERMAP_API_TOKEN"
+	},
 	"LuminositySensor":{
 		"luminosityThreshold":400
 	},

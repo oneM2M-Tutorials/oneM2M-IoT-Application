@@ -1,4 +1,4 @@
-# Version 1.1
+# Version 1.2
 
 import requests
 import json
@@ -143,6 +143,8 @@ def processNotification():
         commandLedTilt(sensorValue)
     elif (sensorToMonitor == "PotentiometerSensor") and (actuatorToTrigger == "DisplayActuator"):
         commandDisplayPotentiometer(sensorValue)
+    elif (sensorToMonitor == "RemoteControlSensor") and (actuatorToTrigger == "ServoActuator"):
+        commandServoRemoteControl(sensorValue)
     else:
         print("Demo not implemented")
 	# demo selection : end
@@ -186,6 +188,51 @@ def commandDisplayPotentiometer(sensorValue):
     else: 
         print ( "Potentionmeter value is high  => Show [Value is HIGH !] on the LCD Screen ")
         createCIN(actuatorToTrigger, "[Value is HIGH !]")
+
+def commandServoRemoteControl(sensorValue):
+	cityName = "";
+	if   (sensorValue=="0"):
+		cityName = "toulon"
+	elif (sensorValue=="1"):
+		cityName = "strasbourg"
+	elif (sensorValue=="2"):
+		cityName = "moscou"
+	elif (sensorValue=="3"):
+		cityName = "quaqtaq"
+	else:
+		cityName = ""
+	
+	if (cityName != ""):
+		APIToken = config["misc"]["weatherAPIToken"]
+		print("City " + cityName + " is supported => Retreiveing Weather info from the web !")
+		
+		
+
+		response = requests.get('http://api.openweathermap.org/data/2.5/weather?q='+ cityName +'&appid='+ APIToken +'&units=metric')
+		if response.status_code != 200:
+			print("OpenWeatherAPI error : ", response.text)
+		else:
+			print("OpenWeatherAPI success :", response.status_code)
+			
+			obj = json.loads(response.txt)
+			weather = obj['weather'][0]['main']
+			print("Weather in " + cityName + " : " + weather)
+			
+			if   (weather == "Snow"):
+				createCIN(actuatorToTrigger, "[POS = 0 deg]")
+			elif (weather == "Storm"): 
+				createCIN(actuatorToTrigger, "[POS = 45 deg]")
+			elif (weather == "Rain"): 
+				createCIN(actuatorToTrigger, "[POS = 90 deg]")
+			elif (weather == "Clouds"): 
+				createCIN(actuatorToTrigger, "[POS = 135 deg]")
+			elif (weather == "Clear"): 
+				createCIN(actuatorToTrigger, "[POS = 180 deg]")
+			else :
+				print("Weather condition is not supported ! ")
+	else:
+		print("City " + cityName + "is not supported => Nothing to do !")
+	
 
 def commandActuator(args):
     global actuatorToTrigger
